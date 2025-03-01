@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
@@ -9,6 +10,10 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Google Gemini AI API Key
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -16,34 +21,29 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// Image Path (Directly from Folder)
-const IMAGE_FOLDER = path.join(__dirname, "images"); // Folder where images are stored
-
-// Converts local file information to base64
-function fileToGenerativePart(filePath, mimeType) {
-  return {
-    inlineData: {
-      data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
-      mimeType
-    },
-  };
-}
+// Set up multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
 // Route: Process Image from File
-app.get("/process-image", async (req, res) => {
+app.post("/process-image", upload.single('image'), async (req, res) => {
     try {
-        const imageName = "test.jpg"; // Change this to your image file name
-        const imagePath = path.join(IMAGE_FOLDER, imageName);
-
-        if (!fs.existsSync(imagePath)) {
-            return res.status(404).json({ error: "Image not found in folder" });
-        }
+        const imagePath = req.file.path;
 
         // Convert Image to Base64
-        const imagePart = fileToGenerativePart(imagePath, "image/jpeg");
+        const imagePart = {
+            inlineData: {
+                data: Buffer.from(fs.readFileSync(imagePath)).toString("base64"),
+                mimeType: req.file.mimetype
+            }
+        };
 
         // Define the prompt
-        const prompt = "Analyze the given image and identify all the small, specific objects, elements, or patterns present. Based on the detected elements, generate 4 detailed and challenging questions that test a person's ability to observe and recall specific details about the image. The questions should focus on less obvious details that require careful observation.";
+        const prompt = `
+            Analyze the given image and generate 4 detailed and challenging observation questions based on the image. 
+            The questions should focus on less obvious details that require careful observation. 
+            Ensure the questions are concise and require the observer to recall precise details like patterns, colors, positions, and the relationships between different objects within the image.
+            Provide the questions in  English.
+        `;
 
         // Get the model
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -54,9 +54,12 @@ app.get("/process-image", async (req, res) => {
         // Extract response text
         const questions = generatedContent.response.text() || "No questions generated";
 
-        const result = { image: imageName, questions };
+        const result = { image: req.file.filename, questions: questions.split('\n').filter(q => q.trim() !== '') };
         res.json(result);
         console.log(result);
+
+        // Clean up uploaded file
+        fs.unlinkSync(imagePath);
     } catch (error) {
         console.error("Error:", error.message);
         res.status(500).json({ error: "Server error" });
