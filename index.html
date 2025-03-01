@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image</title>
+</head>
+<body>
+    <h2>Upload an Image</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="image" id="imageInput" required>
+        <button type="submit">Upload</button>
+    </form>
+    <pre id="output"></pre>
+
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append("image", document.getElementById("imageInput").files[0]);
+
+            const response = await fetch("http://localhost:5000/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            document.getElementById("output").textContent = JSON.stringify(result, null, 2);
+        });
+    </script>
+</body>
+</html>
