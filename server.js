@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(cors());
 // Google Gemini AI API Key
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 

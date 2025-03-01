@@ -13,7 +13,7 @@ document.getElementById('uploadButton').addEventListener('click', async () => {
     questionsContainer.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-        const response = await fetch('/process-image', {
+        const response = await fetch('https://observation-power-enhancer-ai-image-quiz.onrender.com/process-image', {
             method: 'POST',
             body: formData
         });
@@ -80,7 +80,7 @@ document.getElementById('submitButton').addEventListener('click', async () => {
     resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
 
     try {
-        const response = await fetch('/validate-answers', {
+        const response = await fetch('https://observation-power-enhancer-ai-image-quiz.onrender.com/validate-answers', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
